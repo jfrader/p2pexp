@@ -51,4 +51,5 @@ npm run dev
 - Preload bridge API: https://github.com/holepunchto/hello-pear-electron/blob/main/electron/preload.js
 
 # Used AI assistance for
-- research, boilerplate, tests, QA and code review.
+- research, boilerplate, tests, QA and code review
+- the forge AppImage packaging setup
