@@ -39,26 +39,7 @@ export const rootRoute = createRootRoute({
       <Stack sx={{ height: '100vh', overflow: 'hidden' }}>
         <Topbar>
           <Typography variant="h6">p2pexp</Typography>
-          <Tabs
-            value={pathname === '/invoices' ? '/invoices' : '/'}
-            onChange={onTabChangeHandler}
-            sx={{
-              ml: 'auto',
-              height: '100%',
-              minHeight: 0,
-              '& .MuiTab-root': {
-                minHeight: 64,
-                minWidth: 0,
-                paddingX: 2.5,
-                textTransform: 'none',
-                fontWeight: 600,
-                color: 'text.secondary',
-                '&:hover': { color: 'text.primary' },
-              },
-              '& .Mui-selected': { color: 'primary.main' },
-              '& .MuiTabs-indicator': { height: 2 },
-            }}
-          >
+          <Tabs value={pathname} onChange={onTabChangeHandler}>
             <Tab label="New invoice" value="/" />
             <Tab label="Invoices" value="/invoices" />
           </Tabs>
