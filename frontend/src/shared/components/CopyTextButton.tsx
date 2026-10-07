@@ -1,7 +1,7 @@
 import { ContentCopy } from '@mui/icons-material'
 import { IconButton, Tooltip } from '@mui/material'
 import type { IconButtonProps } from '@mui/material'
-import { useClipboard } from '../../hooks/useClipboard'
+import { useClipboard } from '../hooks/useClipboard'
 
 export type CopyTextButtonProps = IconButtonProps & {
   text: string
@@ -20,7 +20,6 @@ export const CopyTextButton = ({ text, ...props }: CopyTextButtonProps) => {
       disableTouchListener={props.disabled}
     >
       <IconButton
-        size="small"
         {...props}
         onClick={(event) => {
           props.onClick?.(event)

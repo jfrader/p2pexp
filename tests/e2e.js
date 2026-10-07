@@ -19,6 +19,7 @@ async function step(name, fn) {
   } catch (error) {
     results.push({ name, ok: false, error: String(error).split('\n')[0] })
     console.log(`FAIL ${name}: ${String(error).split('\n')[0]}`)
+    throw error
   }
 }
 
@@ -34,11 +35,11 @@ async function freePort() {
 }
 
 async function connect(page) {
-  await page.waitForSelector('text=Payment requests', { timeout: 20000 })
+  await page.waitForSelector('text=Invoices', { timeout: 20000 })
   await page.waitForFunction(
     () => {
       const button = [...document.querySelectorAll('button')].find((b) =>
-        b.textContent.includes('Share invoice'),
+        b.textContent.includes('Save'),
       )
       return button !== undefined && !button.disabled
     },
@@ -58,6 +59,7 @@ async function main() {
   )
 
   let browser
+  let stepError = null
   try {
     for (let attempt = 0; attempt < 30; attempt++) {
       try {
@@ -71,9 +73,10 @@ async function main() {
 
     const page = browser.contexts()[0].pages()[0]
     await page.waitForLoadState()
+    page.on('dialog', (dialog) => dialog.accept())
 
     await step('app boots to invoices screen', async () => {
-      await page.waitForSelector('text=Payment requests', { timeout: 20000 })
+      await page.waitForSelector('text=Invoices', { timeout: 20000 })
       await page.screenshot({ path: path.join(ARTIFACTS, '1-boot.png') })
     })
 
@@ -83,26 +86,24 @@ async function main() {
     })
 
     await step('invalid on-chain address is rejected', async () => {
+      await page.fill('input[name="total"]', '0.0015')
       await page.fill('input[name="address"]', 'not-an-address')
-      await page.fill('input[name="amountBtc"]', '0.0015')
-      await page.click('button:has-text("Share invoice")')
-      await page.waitForSelector('text=Not a valid mainnet Bitcoin address', { timeout: 5000 })
+      await page.click('button:has-text("Save")')
+      await page.waitForSelector('text=Invalid address', { timeout: 5000 })
       await page.screenshot({ path: path.join(ARTIFACTS, '3-invalid-address.png') })
     })
 
     await step('valid on-chain invoice is created with QR', async () => {
+      await page.fill('input[name="total"]', '0.0015')
       await page.fill('input[name="address"]', 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4')
-      await page.fill('input[name="amountBtc"]', '0.0015')
-      await page.fill('input[name="description"]', 'e2e coffee')
-      await page.click('button:has-text("Share invoice")')
+      await page.click('button:has-text("Save")')
+      await page.getByRole('tab', { name: 'Invoices' }).click()
       await page.waitForSelector('text=Open', { timeout: 10000 })
-      await page.waitForSelector('svg', { timeout: 5000 })
+      await page.waitForSelector('svg[width="180"]', { timeout: 5000 })
       await page.screenshot({ path: path.join(ARTIFACTS, '4-invoice-card.png') })
     })
 
-    await step('invoice shows amount and description', async () => {
-      await page.waitForSelector('text=150,000 sats', { timeout: 5000 })
-      await page.waitForSelector('text=e2e coffee', { timeout: 5000 })
+    await step('invoice shows the total', async () => {
       await page.waitForSelector('text=0.0015 BTC', { timeout: 5000 })
     })
 
@@ -115,10 +116,15 @@ async function main() {
 
     await step('copy destination shows feedback', async () => {
       const copy = page.locator('[aria-label="Copy destination"]')
-      await copy.hover()
-      await page.waitForSelector('text=Copy', { timeout: 5000 })
       await copy.click()
-      await page.waitForSelector('text=Copied!', { timeout: 10000 })
+      await page.waitForFunction(
+        () => {
+          const button = document.querySelector('[aria-label="Copy destination"]')
+          const svg = button && button.querySelector('svg')
+          return svg !== null && window.getComputedStyle(svg).opacity === '0.5'
+        },
+        { timeout: 10000 },
+      )
       await page.screenshot({ path: path.join(ARTIFACTS, '5-copied.png') })
     })
 
@@ -133,15 +139,90 @@ async function main() {
       await page.waitForSelector('text=No invoices yet', { timeout: 10000 })
       await page.screenshot({ path: path.join(ARTIFACTS, '7-empty.png') })
     })
+
+    await step('amount validation cases', async () => {
+      await page.getByRole('tab', { name: 'New invoice' }).click()
+      await page.fill('input[name="address"]', 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4')
+      const cases = [
+        ['', 'Enter a valid amount'],
+        ['0', 'Enter a valid amount'],
+        ['-1', 'Enter a valid amount'],
+        ['0.000000001', 'Enter a valid amount'],
+        ['0.0015 BTC', 'Enter a valid amount'],
+      ]
+      for (const [value, message] of cases) {
+        await page.fill('input[name="total"]', value)
+        await page.click('button:has-text("Save")')
+        await page.waitForSelector(`text=${message}`, { timeout: 5000 })
+      }
+      await page.screenshot({ path: path.join(ARTIFACTS, '8-amount-errors.png') })
+    })
+
+    await step('empty and testnet addresses are rejected', async () => {
+      await page.fill('input[name="total"]', '0.0015')
+      await page.fill('input[name="address"]', '')
+      await page.click('button:has-text("Save")')
+      await page.waitForSelector('text=Enter a Bitcoin address', { timeout: 5000 })
+      await page.fill('input[name="address"]', 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx')
+      await page.click('button:has-text("Save")')
+      await page.waitForSelector('text=Invalid address', { timeout: 5000 })
+    })
+
+    await step('full form fits without scrolling', async () => {
+      await page.getByRole('tab', { name: 'Invoices' }).click()
+      await page.getByRole('tab', { name: 'New invoice' }).click()
+      await page.fill('input[name="address"]', 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4')
+      const cut = await page.evaluate(() => {
+        const button = [...document.querySelectorAll('button')].find((b) =>
+          b.textContent.includes('Save'),
+        )
+        let container = button && button.parentElement
+        while (container && getComputedStyle(container).overflowY !== 'auto') {
+          container = container.parentElement
+        }
+        if (container === null) return true
+        return button.getBoundingClientRect().bottom > container.getBoundingClientRect().bottom
+      })
+      if (cut) throw new Error('save button is cut by the viewport bottom')
+    })
+
+    await step('full invoice with details is created', async () => {
+      await page.getByLabel('Description').fill('consulting')
+      await page.fill('input[name="from"]', 'Alice')
+      await page.fill('input[name="to"]', 'Bob')
+      await page.fill('input[name="total"]', '0.002')
+      await page.click('button:has-text("Save")')
+      await page.waitForSelector('text=Open', { timeout: 10000 })
+      await page.waitForSelector('text=consulting', { timeout: 5000 })
+      await page.waitForSelector('text=0.002 BTC', { timeout: 5000 })
+      await page.waitForSelector('text=Alice → Bob', { timeout: 5000 })
+      await page.screenshot({ path: path.join(ARTIFACTS, '9-full-invoice.png') })
+    })
+
+    await step('full invoice is removed', async () => {
+      await page.click('button:has-text("Remove")')
+      await page.waitForSelector('text=No invoices yet', { timeout: 10000 })
+    })
+  } catch (error) {
+    stepError = error
   } finally {
     if (browser) await browser.close().catch(() => {})
-    child.kill('SIGTERM')
+    if (child.exitCode === null) {
+      child.kill('SIGTERM')
+      await new Promise((resolve) => {
+        const timer = setTimeout(resolve, 5000)
+        child.once('exit', () => {
+          clearTimeout(timer)
+          resolve()
+        })
+      })
+    }
   }
 
   console.log('\n=== SUMMARY ===')
   for (const result of results) console.log(`${result.ok ? 'PASS' : 'FAIL'} ${result.name}`)
   console.log(`\nArtifacts: ${ARTIFACTS}`)
-  if (results.some((result) => !result.ok)) process.exit(1)
+  if (stepError !== null || results.some((result) => !result.ok)) process.exit(1)
 }
 
 main().catch((error) => {

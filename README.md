@@ -1,7 +1,25 @@
-# p2pexp
+# Create and store invoices with Autopass
 
-Create and share Bitcoin payment requests, with a QR and copy-to-clipboard. Stored
-in a local Autopass vault.
+Create an invoice with your details and BTC address.
+Autopass stores each invoice in your local vault.
+Copy the payment address or show its QR code.
+
+# Concept
+
+Done:
+
+- Each invoice is one Autopass entry with the sender, customer, description, total, asset and payment status
+
+Todo ideas:
+
+- Connect two vaults over Pear so invoices arrive automatically and payment status stays in sync
+- Create payment channels between Pear peers that can sync multiple invoices at the same time
+- Export invoices as PDF
+- Check the invoice address on the blockchain and mark it paid when the payment lands
+- Support other cryptocurrencies and networks
+- Convert to fiat rates
+
+# Quick start
 
 Requires Node 24 and npm. From this directory:
 
@@ -26,14 +44,5 @@ npm run dev
 - `npm start` run the built app
 - `npm run package` unpacked app in `out/`
 
-# Boilerplate
-
-- `electron/main.js`, `electron/preload.js`: from the upstream Pear desktop starter
-  (`holepunchto/hello-pear-electron`, commit `ed9dc470d60c495530173e2a4bc7c85b2cb6dd00`).
-  Added: clipboard IPC, external links open in the system browser, a hidden `--cdp-port`
-  flag for the e2e test.
-- `workers/main.js`: the starter's worker plus an Autopass instance (list/add/remove,
-  live updates).
-- `frontend/src/autopass/bridge.ts`, `frontend/src/bridge.d.ts`: the starter's
-  renderer/worker IPC pattern.
-- Used AI for: Vite + Pear boilerplate, `bridge.d.ts`, and the Playwright e2e test.
+# Used AI assistance for
+- research, boilerplate, tests, QA and code review.

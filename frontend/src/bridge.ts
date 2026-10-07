@@ -1,5 +1,5 @@
-import { entriesReceived, failed, type Entry } from '../invoices/state/slice'
-import type { AppDispatch } from '../state/store'
+import { invoicesSlice, type Entry } from './invoices/state/invoicesSlice'
+import type { AppDispatch } from './state/store'
 
 const worker = '/workers/main.js'
 const decoder = new TextDecoder()
@@ -13,7 +13,7 @@ type WorkerMessage = {
 export function connect(dispatch: AppDispatch) {
   const bridge = window.bridge
   if (!bridge) {
-    dispatch(failed('Pear bridge unavailable'))
+    dispatch(invoicesSlice.actions.failed('Pear bridge unavailable'))
     return
   }
 
@@ -22,16 +22,20 @@ export function connect(dispatch: AppDispatch) {
     if (!message.startsWith('{')) return
 
     const parsed = JSON.parse(message) as WorkerMessage
-    if (parsed.type === 'autopass:entries') dispatch(entriesReceived(parsed.entries || []))
-    else if (parsed.type === 'autopass:error') dispatch(failed(parsed.message || ''))
+    if (parsed.type === 'autopass:entries')
+      dispatch(invoicesSlice.actions.entriesReceived(parsed.entries || []))
+    else if (parsed.type === 'autopass:error')
+      dispatch(invoicesSlice.actions.failed(parsed.message || ''))
   })
 
-  bridge.onWorkerExit(worker, (code) => dispatch(failed(`worker exited (${code})`)))
+  bridge.onWorkerExit(worker, (code) =>
+    dispatch(invoicesSlice.actions.failed(`worker exited (${code})`)),
+  )
 
   bridge
     .startWorker(worker)
     .then(() => bridge.writeWorkerIPC(worker, JSON.stringify({ type: 'autopass:list' })))
-    .catch((error) => dispatch(failed(String(error))))
+    .catch((error) => dispatch(invoicesSlice.actions.failed(String(error))))
 }
 
 async function write(message: unknown) {

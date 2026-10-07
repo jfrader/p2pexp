@@ -4,3 +4,4 @@ renderer/
 frontend/dist/
 out/
 *.log
+graphify-out/

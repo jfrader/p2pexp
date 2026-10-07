@@ -3,30 +3,46 @@ import { createTheme } from '@mui/material/styles'
 export const appTheme = createTheme({
   cssVariables: true,
   palette: {
-    background: {
-      default: '#f5f6f8',
-      paper: '#ffffff',
-    },
-    divider: '#e3e6eb',
+    mode: 'dark',
     primary: {
-      main: '#093b14',
-    },
-    text: {
-      primary: '#1c2536',
-      secondary: '#5b6577',
+      main: '#4caf50',
     },
   },
   components: {
     MuiCard: {
       styleOverrides: {
         root: ({ theme }) => ({
-          display: 'flex',
-          flexDirection: 'column',
-          gap: theme.spacing(2),
-          padding: theme.spacing(3),
           border: `1px solid ${theme.palette.divider}`,
           boxShadow: 'none',
+          '&:hover': { borderColor: theme.palette.primary.main },
         }),
+      },
+    },
+    MuiCardActions: {
+      styleOverrides: {
+        root: {
+          justifyContent: 'flex-end',
+        },
+      },
+    },
+    MuiButton: {
+      defaultProps: {
+        size: 'small',
+      },
+    },
+    MuiIconButton: {
+      defaultProps: {
+        size: 'small',
+      },
+    },
+    MuiChip: {
+      defaultProps: {
+        size: 'small',
+      },
+    },
+    MuiTextField: {
+      defaultProps: {
+        fullWidth: true,
       },
     },
   },

@@ -9,12 +9,11 @@ const { command, flag } = require('paparam')
 const pkg = require('../package.json')
 const { name, productName, version, upgrade } = pkg
 
-const protocol = name
 const mainWorkerSpecifier = '/workers/main.js'
 
 const workers = new Map()
 
-const appName = productName ?? name
+const appName = productName || name
 
 const cmd = command(
   appName,
@@ -35,10 +34,6 @@ const updates = cmd.flags.updates
 
 if (pearStore) app.setPath('userData', pearStore)
 
-ipcMain.on('pkg', (evt) => {
-  evt.returnValue = pkg
-})
-
 function getAppPath() {
   if (!app.isPackaged) return null
   if (isLinux && process.env.APPIMAGE) return process.env.APPIMAGE
@@ -57,7 +52,6 @@ function getWorker(specifier) {
   const appPath = getAppPath()
   let dir = null
   if (pearStore) {
-    console.log('pear store: ' + pearStore)
     dir = pearStore
   } else if (appPath === null) {
     dir = path.join(os.tmpdir(), 'pear', appName)
@@ -119,8 +113,8 @@ function getWorker(specifier) {
 
 async function createWindow() {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 940,
     webPreferences: {
       preload: path.join(__dirname, '..', 'electron', 'preload.js'),
       sandbox: true,
@@ -186,27 +180,11 @@ ipcMain.handle('app:afterUpdate', () => {
   app.quit()
 })
 
-function handleDeepLink(url) {
-  console.log('deep link:', url)
-}
-
-app.setAsDefaultProtocolClient(protocol)
-
-app.on('open-url', (evt, url) => {
-  evt.preventDefault()
-  handleDeepLink(url)
-})
-
 const lock = app.requestSingleInstanceLock()
 
 if (!lock) {
   app.quit()
 } else {
-  app.on('second-instance', (evt, args) => {
-    const url = args.find((arg) => arg.startsWith(protocol + '://'))
-    if (url) handleDeepLink(url)
-  })
-
   app.whenReady().then(() => {
     createWindow().catch((err) => {
       console.error('Failed to create window:', err)
