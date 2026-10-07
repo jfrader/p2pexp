@@ -44,5 +44,11 @@ npm run dev
 - `npm start` run the built app
 - `npm run package` unpacked app in `out/`
 
+# References
+
+- Worker boilerplate: https://github.com/holepunchto/hello-pear-worker
+- Renderer IPC example: https://github.com/holepunchto/hello-pear-worker#starting-the-worker
+- Preload bridge API: https://github.com/holepunchto/hello-pear-electron/blob/main/electron/preload.js
+
 # Used AI assistance for
 - research, boilerplate, tests, QA and code review.
