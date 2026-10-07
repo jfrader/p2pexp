@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, clipboard, shell } = require('electron')
 const os = require('os')
 const path = require('path')
 const PearRuntime = require('pear-runtime')
@@ -20,10 +20,15 @@ const cmd = command(
   appName,
   flag('--storage <dir>', 'pass custom storage to pear-runtime'),
   flag('--no-updates', 'start without OTA updates'),
-  flag('--no-sandbox', 'start without Chromium sandbox').hide()
+  flag('--no-sandbox', 'start without Chromium sandbox').hide(),
+  flag('--cdp-port <port>', 'enable Chromium remote debugging').hide()
 )
 
 cmd.parse(app.isPackaged ? process.argv.slice(1) : process.argv.slice(2))
+
+if (cmd.flags.cdpPort) {
+  app.commandLine.appendSwitch('remote-debugging-port', cmd.flags.cdpPort)
+}
 
 const pearStore = cmd.flags.storage
 const updates = cmd.flags.updates
@@ -124,6 +129,11 @@ async function createWindow() {
     }
   })
 
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
   const devServerUrl = process.env.PEAR_DEV_SERVER_URL
 
   if (devServerUrl) {
@@ -151,6 +161,12 @@ ipcMain.handle('pear:applyUpdate', () => {
     pipe.write('pear:applyUpdate')
   })
 })
+ipcMain.handle('clipboard:write', (evt, text) => {
+  if (typeof text !== 'string') return false
+  clipboard.writeText(text)
+  return true
+})
+
 ipcMain.handle('pear:startWorker', (evt, filename) => {
   getWorker(filename)
   return true

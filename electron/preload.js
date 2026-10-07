@@ -34,5 +34,6 @@ contextBridge.exposeInMainWorld('bridge', {
   },
   writeWorkerIPC: (specifier, data) => {
     return ipcRenderer.invoke('pear:worker:writeIPC:' + specifier, data)
-  }
+  },
+  copyText: (text) => ipcRenderer.invoke('clipboard:write', text)
 })

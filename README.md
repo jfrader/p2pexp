@@ -1,15 +1,39 @@
 # p2pexp
 
-Blank desktop scaffold. React and Material UI are installed; no expense, pairing, or networking application behavior is implemented.
+Create and share Bitcoin payment requests, with a QR and copy-to-clipboard. Stored
+in a local Autopass vault.
 
 Requires Node 24 and npm. From this directory:
 
 ```sh
 npm install
 npm --prefix frontend install
+```
+
+Start the dev app (Vite at 127.0.0.1:5173 + Electron):
+
+```sh
 npm run dev
 ```
 
-`npm run dev` starts Vite at `127.0.0.1:5173` and then Electron. For a built renderer, use `npm start`. Both desktop commands disable automatic updates. To check or package without launching a window, run `npm run lint`, `npm run typecheck`, `npm run build`, or `npm run package`. The package command creates an unpacked app in `out/`; it does not create installers, sign, or publish it.
+# Scripts
 
-The renderer was generated with `create-vite`'s `react-ts` template and reduced to a white, empty React root. `electron/main.js`, `electron/preload.js`, and `workers/main.js` were copied from the upstream Pear desktop starter at commit `ed9dc470d60c495530173e2a4bc7c85b2cb6dd00`; only the automatic DevTools opening was removed. The `upgrade` key was allocated locally with `pear touch`; nothing was staged, seeded, provisioned, or published. AI assistance was limited to this scaffold/configuration and blank root, not application implementation.
+- `npm run lint` frontend ESLint
+- `npm run typecheck` frontend TypeScript
+- `npm run test` unit tests + Electron e2e
+- `npm run format` Prettier
+- `npm run build` frontend production build
+- `npm start` run the built app
+- `npm run package` unpacked app in `out/`
+
+# Boilerplate
+
+- `electron/main.js`, `electron/preload.js`: from the upstream Pear desktop starter
+  (`holepunchto/hello-pear-electron`, commit `ed9dc470d60c495530173e2a4bc7c85b2cb6dd00`).
+  Added: clipboard IPC, external links open in the system browser, a hidden `--cdp-port`
+  flag for the e2e test.
+- `workers/main.js`: the starter's worker plus an Autopass instance (list/add/remove,
+  live updates).
+- `frontend/src/autopass/bridge.ts`, `frontend/src/bridge.d.ts`: the starter's
+  renderer/worker IPC pattern.
+- Used AI for: Vite + Pear boilerplate, `bridge.d.ts`, and the Playwright e2e test.
